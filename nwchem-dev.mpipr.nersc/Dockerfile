@@ -21,13 +21,16 @@ COPY Dockerfile cache* /tmp/
 ARG DEBIAN_FRONTEND=noninteractive
 ARG mpich=3.3
 ARG mpich_prefix=mpich-$mpich
+ARG blas=" -Wl,--start-group /usr/local/lib/intel64/libmkl_gf_ilp64.a /usr/local/lib/intel64/libmkl_gnu_thread.a /usr/local/lib/intel64/libmkl_core.a -Wl,--end-group -lgomp -lpthread -lm -ldl"
 #get OpenBLAS and compile with 64-bit integers
 WORKDIR     /opt
 ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
             NWCHEM_TARGET=LINUX64 \
             NWCHEM_MODULES="all python" \
-            BUILD_OPENBLAS=1 \
             BUILD_SCALAPACK=1 \
+	    BLASOPT=$blas \
+	    BLAS_LIB=$blas \
+	    LAPACK_LIB=$blas \
             BLAS_SIZE=8 \
             SCALAPACK_SIZE=8 \
             USE_OPENMP=1 \
@@ -46,8 +49,9 @@ ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
 SHELL ["/bin/bash","-c"]
 RUN         apt-get update \
             && apt-get -y upgrade \
-            && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev \
+            && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev python3-pip \
             && apt-get clean \
+	    && pip install mkl-devel \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
     else  echo 'downloading mpich source' ; \
@@ -94,7 +98,8 @@ RUN         apt-get update \
 	    && echo en_US.UTF-8 >> /etc/locale.nopurge \
 	    && localepurge \
 	    && rm -rf /usr/share/doc \
-            &&       apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev   \
+	    && pip uninstall mkl-devel mkl-include mkl tbb intel-openmp \
+            &&       apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev python3-pip  \
             && apt-get -y install libgfortran5 libgomp1 && apt-get clean \
             && chown -R nwchem /opt/nwchem && chgrp -R nwchem /opt/nwchem \
 	    && dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
