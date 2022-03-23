@@ -21,7 +21,7 @@ COPY Dockerfile cache* /tmp/
 ARG DEBIAN_FRONTEND=noninteractive
 ARG mpich=3.3
 ARG mpich_prefix=mpich-$mpich
-ARG blas=" -Wl,--start-group /usr/local/lib/intel64/libmkl_gf_ilp64.a /usr/local/lib/intel64/libmkl_gnu_thread.a /usr/local/lib/intel64/libmkl_core.a -Wl,--end-group -lgomp -lpthread -lm -ldl"
+ARG blas=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl"
 #get OpenBLAS and compile with 64-bit integers
 WORKDIR     /opt
 ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
@@ -98,7 +98,7 @@ RUN         apt-get update \
 	    && echo en_US.UTF-8 >> /etc/locale.nopurge \
 	    && localepurge \
 	    && rm -rf /usr/share/doc \
-	    && pip uninstall mkl-devel mkl-include mkl tbb intel-openmp \
+	    && pip uninstall tbb intel-openmp \
             &&       apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev python3-pip  \
             && apt-get -y install libgfortran5 libgomp1 && apt-get clean \
             && chown -R nwchem /opt/nwchem && chgrp -R nwchem /opt/nwchem \
