@@ -68,7 +68,7 @@ RUN         apt-get update \
             && rm -f mpif90.show && /usr/local/bin/mpif90 -show >& mpif90.show && cat mpif90.show && rm -f mpif90.show \
             && which mpif90  \
 	    && echo 'cloning nwchem source' \
-            && cd /opt;  rm -rf nwchem || true;git clone --depth 1  https://github.com/nwchemgit/nwchem.git  \
+            && cd /opt;  rm -rf nwchem || true;git clone --depth 1  --branch openblas-openmp https://github.com/dmejiar/nwchem.git  \
             && cd nwchem/src \
 	    && echo 'checking cache #1 ' \
             && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
