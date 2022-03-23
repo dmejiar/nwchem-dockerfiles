@@ -21,16 +21,15 @@ COPY Dockerfile cache* /tmp/
 ARG DEBIAN_FRONTEND=noninteractive
 ARG mpich=3.3
 ARG mpich_prefix=mpich-$mpich
-ARG blas=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl"
 #get OpenBLAS and compile with 64-bit integers
 WORKDIR     /opt
 ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
             NWCHEM_TARGET=LINUX64 \
             NWCHEM_MODULES="all python" \
             BUILD_SCALAPACK=1 \
-	    BLASOPT=$blas \
-	    BLAS_LIB=$blas \
-	    LAPACK_LIB=$blas \
+	    BLASOPT=" -Wl,--no-as-needed -L/usr/local/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
+	    BLAS_LIB=" -Wl,--no-as-needed -L/usr/local/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
+	    LAPACK_LIB=" -Wl,--no-as-needed -L/usr/local/lib -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
             BLAS_SIZE=8 \
             SCALAPACK_SIZE=8 \
             USE_OPENMP=1 \
@@ -52,6 +51,7 @@ RUN         apt-get update \
             && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev python3-pip \
             && apt-get clean \
 	    && pip install mkl-devel \
+	    && ls /usr/local/lib/libmkl* \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
     else  echo 'downloading mpich source' ; \
