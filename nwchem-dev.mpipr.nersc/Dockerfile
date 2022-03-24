@@ -99,11 +99,13 @@ RUN         apt-get update \
 	    && echo en_US.UTF-8 >> /etc/locale.nopurge \
 	    && localepurge \
 	    && rm -rf /usr/share/doc \
-            &&       apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev python3-pip python-pip-whl git-man perl-base perl-modules-5.30 libperl5.3.0 localepurge \
+            &&       apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev python3-pip python-pip-whl git-man perl-base perl-modules-5.30 localepurge \
             && apt-get -y install libgfortran5 libgomp1 \
 	    && apt-get -y autoremove --purge \
 	    && apt-get clean \
             && chown -R nwchem /opt/nwchem && chgrp -R nwchem /opt/nwchem \
+	    && echo "int mkl_serv_intel_cpu_true() {return 1;}" > fakeintel.c \
+	    && gcc -shared -fPIC -o /usr/local/lib/libfakeintel.so fakeintel.c \
 	    && dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100 \
 	    && rm -rf /usr/local/lib/libmkl_blacs* /usr/local/bin/libmkl_cdft* /usr/local/bin/libmkl_scalapack* /usr/local/bin/libmkl_pgi* 
 #ENV         NWCHEM_EXECUTABLE=${NWCHEM_TOP}/bin/LINUX64/nwchem
@@ -117,7 +119,8 @@ ENV         FFIELD=amber \
             SPCE=${NWCHEM_TOP}/src/data/solvents/spce.rst \
             CHARMM_S=${NWCHEM_TOP}/src/data/charmm_s/ \
             CHARMM_X=${NWCHEM_TOP}/src/data/charmm_x/ \
-            PATH=$PATH:${NWCHEM_TOP}/bin/LINUX64
+            PATH=$PATH:${NWCHEM_TOP}/bin/LINUX64 \
+	    LD_PRELOAD=/usr/local/lib/libfakeintel.so
 
 #clean unnecessary packages
 #RUN         apt-get -y remove  make curl  unzip cmake   &&  apt-get -y autoremove && apt-get clean
