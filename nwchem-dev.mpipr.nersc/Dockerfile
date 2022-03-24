@@ -31,7 +31,8 @@ ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
 	    USE_HWOPT=n  \
             USE_MPI=y \
             USE_MPIF=y \
-            USE_MPIF4=y 
+            USE_MPIF4=y \
+            DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash","-c"]
 RUN         apt-get update \
             && apt-get -y upgrade \
