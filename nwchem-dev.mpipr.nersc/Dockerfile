@@ -25,7 +25,7 @@ ARG mpich_prefix=mpich-$mpich
 WORKDIR     /opt
 ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
             NWCHEM_TARGET=LINUX64 \
-            NWCHEM_MODULES="all python" \
+            NWCHEM_MODULES="smallqm" \
             BUILD_SCALAPACK=1 \
 	    BLASOPT=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
 	    BLAS_LIB=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
@@ -76,7 +76,7 @@ RUN         apt-get update \
             && cd /opt;  rm -rf nwchem || true;git clone --depth 1  --branch openblas-openmp https://github.com/dmejiar/nwchem.git  \
             && cd nwchem/src \
 	    && echo 'checking cache #1 ' \
-            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
+#            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
 	    && echo 'checking cache #3 ' \
             && if [[ -f /tmp/simint.tar.bz2 ]]; then cd NWints/simint/libsimint_source ; tar xjf /tmp/simint.tar.bz2; rm -rf /tmp/simint.tar.bz2 ; cd ../../..  ; fi\
             && cd /opt/nwchem/src && make nwchem_config && make -j3  ||true \
@@ -101,7 +101,7 @@ RUN         apt-get update \
 	    && rm -rf /usr/share/doc \
             &&       apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev python3-pip python-pip-whl git-man perl-base perl-modules-5.30 localepurge \
             && apt-get -y install libgfortran5 libgomp1 \
-	    && apt-get -y autoremove --purge \
+	    && apt-get -y autoremove \
 	    && apt-get clean \
             && chown -R nwchem /opt/nwchem && chgrp -R nwchem /opt/nwchem \
 	    && echo "int mkl_serv_intel_cpu_true() {return 1;}" > fakeintel.c \
