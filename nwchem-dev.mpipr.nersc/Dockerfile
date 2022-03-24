@@ -38,9 +38,6 @@ RUN         apt-get update \
             && apt-get -y upgrade \
             && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev python3-pip \
             && apt-get clean \
-            && pip install mkl-devel \
-            && for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done \
-            && ls /usr/local/lib/libmkl* \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
     else  echo 'downloading mpich source' ; \
@@ -61,11 +58,16 @@ RUN         apt-get update \
             && echo 'after mpich compilation ' \
             && rm -f mpif90.show && /usr/local/bin/mpif90 -show >& mpif90.show && cat mpif90.show && rm -f mpif90.show \
             && which mpif90  \
+	    && cd /usr/local ; tar cjvf mpich.tar.bz2 lib/* include/* bin/* share/* ||true \
+	    && cd /opt \
+            && pip install mkl-devel \
+            && for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done \
+            && ls /usr/local/lib/libmkl* \
 	    && echo 'cloning nwchem source' \
             && cd /opt;  rm -rf nwchem || true;git clone --depth 1  --branch openblas-openmp https://github.com/dmejiar/nwchem.git  \
             && cd nwchem/src \
 	    && echo 'checking cache #1 ' \
-#            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
+            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
             && if [[ -f /tmp/libext.tar.bz2 ]]; then rm -rf /tmp/libext.tar.bz2 ; fi\
 	    && echo 'checking cache #3 ' \
             && if [[ -f /tmp/simint.tar.bz2 ]]; then cd NWints/simint/libsimint_source ; tar xjf /tmp/simint.tar.bz2; rm -rf /tmp/simint.tar.bz2 ; cd ../../..  ; fi\
@@ -81,7 +83,6 @@ RUN         apt-get update \
 	    && cd $NWCHEM_TOP/src \
             && echo 'clean unnecessary source to reduce docker size' \
             && rm -rf tce tools nwdft NWints geom symmetry util nwxc ddscf lapack blas rism argos peigs rmdft gradients symmetry property smd lucia dplot property hessian ccsd mp2_grad moints cafe analyz dimqm /opt/nwchem/lib libext/scalapack libext/openblas  develop ../QA  ../contrib ../examples ../.git ../travis ../web nwpw/nwpwlib/nwpwxc rdmft ../doc libext/libxc/libxc* libext/mpich  /tmp/libext /tmp/local || true \
-	    && cd /usr/local ; tar cjvf mpich.tar.bz2 lib/* include/* bin/* share/* ||true \
 	    && echo "int mkl_serv_intel_cpu_true() {return 1;}" > fakeintel.c \
 	    && gcc -shared -fPIC -o /usr/local/lib/libfakeintel.so fakeintel.c \
 	    && rm -rf /usr/local/include/mkl* /usr/local/lib/libmkl_pgi* /usr/local/lib/libmkl_scalapack* \
