@@ -40,6 +40,7 @@ RUN         apt-get update \
             && apt-get clean \
             && pip install mkl-devel \
             && for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done \
+            && ls /usr/local/lib/libmkl* \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
     else  echo 'downloading mpich source' ; \
@@ -56,7 +57,6 @@ RUN         apt-get update \
     tail install.log ; \
     cd ..                                                                   ; \
     rm -rf $mpich_prefix ; echo 'mpich step done'; \
-    ls /usr/local/lib/libmkl* ;\
     fi \
             && echo 'after mpich compilation ' \
             && rm -f mpif90.show && /usr/local/bin/mpif90 -show >& mpif90.show && cat mpif90.show && rm -f mpif90.show \
