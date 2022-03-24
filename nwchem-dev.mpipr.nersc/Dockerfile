@@ -27,9 +27,9 @@ ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
             NWCHEM_TARGET=LINUX64 \
             NWCHEM_MODULES="smallqm" \
             BUILD_SCALAPACK=1 \
-	    BLASOPT=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
-	    BLAS_LIB=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
-	    LAPACK_LIB=" -Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
+	    BLASOPT="-Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
+	    BLAS_LIB="-Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
+	    LAPACK_LIB="-Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
             BLAS_SIZE=8 \
             SCALAPACK_SIZE=8 \
             USE_OPENMP=1 \
