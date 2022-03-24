@@ -38,6 +38,8 @@ RUN         apt-get update \
             && apt-get -y upgrade \
             && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev python3-pip \
             && apt-get clean \
+            && pip install mkl-devel \
+            && for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
     else  echo 'downloading mpich source' ; \
@@ -54,8 +56,6 @@ RUN         apt-get update \
     tail install.log ; \
     cd ..                                                                   ; \
     rm -rf $mpich_prefix ; echo 'mpich step done'; \
-    pip install mkl-devel ; \
-    for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done; \
     ls /usr/local/lib/libmkl* ;\
     fi \
             && echo 'after mpich compilation ' \
@@ -65,7 +65,8 @@ RUN         apt-get update \
             && cd /opt;  rm -rf nwchem || true;git clone --depth 1  --branch openblas-openmp https://github.com/dmejiar/nwchem.git  \
             && cd nwchem/src \
 	    && echo 'checking cache #1 ' \
-            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
+#            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
+            && if [[ -f /tmp/libext.tar.bz2 ]]; then rm -rf /tmp/libext.tar.bz2 ; fi\
 	    && echo 'checking cache #3 ' \
             && if [[ -f /tmp/simint.tar.bz2 ]]; then cd NWints/simint/libsimint_source ; tar xjf /tmp/simint.tar.bz2; rm -rf /tmp/simint.tar.bz2 ; cd ../../..  ; fi\
             && cd /opt/nwchem/src && make nwchem_config && make -j3  ||true \
