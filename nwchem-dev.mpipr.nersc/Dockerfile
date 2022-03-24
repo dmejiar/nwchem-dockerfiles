@@ -7,25 +7,15 @@
 #docker run nwchem-702.mpipr.nersc dft_he2+ h2o_dk h2o_opt
 #
 
-FROM        ubuntu
-
+FROM        ubuntu AS builder
 MAINTAINER  Edoardo Apra <edoardo.apra@pnnl.gov>
-
-#create user nwchem
-RUN           groupadd -r nwchem -g 1994 \
-              && useradd  -u 1994 -r -g nwchem -c 'NWChem user' -m -d /opt/nwchem -s /bin/bash nwchem 
-
-#caching from host cache dir
 COPY Dockerfile cache* /tmp/
-
-ARG DEBIAN_FRONTEND=noninteractive
 ARG mpich=3.3
 ARG mpich_prefix=mpich-$mpich
-#get OpenBLAS and compile with 64-bit integers
 WORKDIR     /opt
 ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
             NWCHEM_TARGET=LINUX64 \
-            NWCHEM_MODULES="smallqm" \
+            NWCHEM_MODULES="all python" \
             BUILD_SCALAPACK=1 \
 	    BLASOPT="-Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
 	    BLAS_LIB="-Wl,--no-as-needed -lmkl_gf_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl" \
@@ -42,17 +32,11 @@ ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
             USE_MPI=y \
             USE_MPIF=y \
             USE_MPIF4=y 
-#ENV         MRCC_METHODS=y
-#ENV         CCSDTQ=y
-#ENV         CCSDTLR=y
 SHELL ["/bin/bash","-c"]
 RUN         apt-get update \
             && apt-get -y upgrade \
             && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev python3-pip \
             && apt-get clean \
-	    && pip install mkl-devel \
-            && for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done \
-	    && ls /usr/local/lib/libmkl* \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
     else  echo 'downloading mpich source' ; \
@@ -68,7 +52,11 @@ RUN         apt-get update \
     make install    >& install.log                                        ; \
     tail install.log ; \
     cd ..                                                                   ; \
-    rm -rf $mpich_prefix ; echo 'mpich step done'; fi \
+    rm -rf $mpich_prefix ; echo 'mpich step done'; \
+    pip install mkl-devel ; \
+    for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done; \
+    ls /usr/local/lib/libmkl* ;\
+    fi \
             && echo 'after mpich compilation ' \
             && rm -f mpif90.show && /usr/local/bin/mpif90 -show >& mpif90.show && cat mpif90.show && rm -f mpif90.show \
             && which mpif90  \
@@ -76,7 +64,7 @@ RUN         apt-get update \
             && cd /opt;  rm -rf nwchem || true;git clone --depth 1  --branch openblas-openmp https://github.com/dmejiar/nwchem.git  \
             && cd nwchem/src \
 	    && echo 'checking cache #1 ' \
-#            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
+            && if [[ -f /tmp/libext.tar.bz2 ]]; then cd libext ; tar xjf /tmp/libext.tar.bz2; rm -rf /tmp/libext.tar.bz2 ; cd ..  ; fi\
 	    && echo 'checking cache #3 ' \
             && if [[ -f /tmp/simint.tar.bz2 ]]; then cd NWints/simint/libsimint_source ; tar xjf /tmp/simint.tar.bz2; rm -rf /tmp/simint.tar.bz2 ; cd ../../..  ; fi\
             && cd /opt/nwchem/src && make nwchem_config && make -j3  ||true \
@@ -92,24 +80,18 @@ RUN         apt-get update \
             && echo 'clean unnecessary source to reduce docker size' \
             && rm -rf tce tools nwdft NWints geom symmetry util nwxc ddscf lapack blas rism argos peigs rmdft gradients symmetry property smd lucia dplot property hessian ccsd mp2_grad moints cafe analyz dimqm /opt/nwchem/lib libext/scalapack libext/openblas  develop ../QA  ../contrib ../examples ../.git ../travis ../web nwpw/nwpwlib/nwpwxc rdmft ../doc libext/libxc/libxc* libext/mpich  /tmp/libext /tmp/local || true \
 	    && cd /usr/local ; tar cjvf mpich.tar.bz2 lib/* include/* bin/* share/* ||true \
-            && echo 'clean unnecessary packages ' \
-            && DEBIAN_FRONTEND=noninteractive apt-get -y install localepurge \
-	    && echo MANDELETE >  /etc/locale.nopurge \
-	    && echo DONTBOTHERNEWLOCALE >> /etc/locale.nopurge \
-	    && echo en_US.UTF-8 >> /etc/locale.nopurge \
-	    && localepurge \
-	    && rm -rf /usr/share/doc \
 	    && echo "int mkl_serv_intel_cpu_true() {return 1;}" > fakeintel.c \
 	    && gcc -shared -fPIC -o /usr/local/lib/libfakeintel.so fakeintel.c \
-            && apt-get -y purge   patch curl  wget unzip make git cpp-9 gfortran-9 gcc-9 libicu66 libpython3.8-dev libstdc++-9-dev libc6-dev libgcc-9-dev* libgfortran-9-dev python3-pip python-pip-whl git-man perl-modules-5.30 localepurge \
-            && apt-get -y install libgfortran5 libgomp1 \
-	    && apt-get clean \
-            && chown -R nwchem /opt/nwchem && chgrp -R nwchem /opt/nwchem \
-	    && dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100 \
-	    && rm -rf /usr/local/lib/libmkl_blacs* /usr/local/bin/libmkl_cdft* /usr/local/bin/libmkl_scalapack* /usr/local/bin/libmkl_pgi* 
-#ENV         NWCHEM_EXECUTABLE=${NWCHEM_TOP}/bin/LINUX64/nwchem
-#ENV         NWCHEM_BASIS_LIBRARY=${NWCHEM_TOP}/src/basis/libraries/
-#ENV         NWCHEM_NWPW_LIBRARY=${NWCHEM_TOP}/src/nwpw/libraryps/
+	    && rm -rf /usr/local/include/mkl* /usr/local/lib/libmkl_pgi* /usr/local/lib/libmkl_scalapack* \
+               /usr/local/lib/libtbb* /usr/local/lib/libmkl_vml* /usr/local/lib/libiomp* \
+               /usr/local/lib/libmkl*_lp64* /usr/local/lib/libmkl_intel_* /usr/local/lib/libmkl_rt* \
+               /usr/local/lib/libmkl*_mc* /usr/local/lib/libmkl_tbb* /usr/local/lib/libmkl_seq* \
+	       /usr/local/lib/libmkl_blacs* /usr/local/bin/libmkl_cdft* /usr/local/bin/libmkl_scalapack* \
+	       /usr/local/bin/libmkl_pgi* 
+
+
+FROM ubuntu
+ENV  NWCHEM_TOP=/opt/nwchem
 ENV         FFIELD=amber \
             AMBER_1=${NWCHEM_TOP}/src/data/amber_s/ \
             AMBER_2=${NWCHEM_TOP}/src/data/amber_q/ \
@@ -119,12 +101,25 @@ ENV         FFIELD=amber \
             CHARMM_S=${NWCHEM_TOP}/src/data/charmm_s/ \
             CHARMM_X=${NWCHEM_TOP}/src/data/charmm_x/ \
             PATH=$PATH:${NWCHEM_TOP}/bin/LINUX64 \
-	    LD_PRELOAD=/usr/local/lib/libfakeintel.so
-
-#clean unnecessary packages
-#RUN         apt-get -y remove  make curl  unzip cmake   &&  apt-get -y autoremove && apt-get clean
-
+            LD_PRELOAD=/usr/local/lib/libfakeintel.so
+COPY --from=builder /usr/local/include/ /usr/local/include/
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/bin /usr/local/bin/
+COPY --from=builder /opt/nwchem/src/libext/libext.tar.bz2 /opt/nwchem/src/libext/
+COPY --from=builder /opt/nwchem/src/libext/simint.tar.bz2 /opt/nwchem/src/libext/
+COPY --from=builder /usr/local/mpich.tar.bz2 /usr/local/
+COPY --from=builder /opt/nwchem/bin/LINUX64/nwchem /opt/nwchem/bin/LINUX64/
+COPY --from=builder /opt/nwchem/src/data/ /opt/nwchem/src/data/
+COPY --from=builder /opt/nwchem/src/basis/libraries/ /opt/nwchem/src/basis/libraries/
+COPY --from=builder /opt/nwchem/src/basis/libraries.bse/ /opt/nwchem/src/basis/libraries.bse/
+RUN apt-get update \
+    && apt-get -y --no-install-recommends install libgfortran5 libgomp1 python3 \ 
+    && apt-get clean \
+    && groupadd -r nwchem -g 1994 \
+    && useradd  -u 1994 -r -g nwchem -c 'NWChem user' -m -d /opt/nwchem -s /bin/bash nwchem \
+    && chown -R nwchem /opt/nwchem && chgrp -R nwchem /opt/nwchem \
+    && dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100 \
+    && ldd /opt/nwchem/bin/LINUX64/nwchem
 USER        nwchem
-
 WORKDIR     /data
 ENTRYPOINT  ["mpirun","-np","3","nwchem"]
