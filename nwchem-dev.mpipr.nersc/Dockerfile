@@ -36,7 +36,7 @@ ENV         ARMCI_NETWORK=MPI-PR NWCHEM_TOP="/opt/nwchem" \
 SHELL ["/bin/bash","-c"]
 RUN         apt-get update \
             && apt-get -y upgrade \
-            && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev python3-pip \
+            && apt-get install -y  g++ gfortran   make ssh patch curl rsync wget unzip perl git file python3 python3-dev libmkl-dev \
             && apt-get clean \
 	    && echo 'checking cache #2 ' \
             && if [[ -f /tmp/mpich.tar.bz2 ]]; then cd /usr/local ; tar xjf /tmp/mpich.tar.bz2; rm -rf /tmp/mpich.tar.bz2 ; \
@@ -60,9 +60,6 @@ RUN         apt-get update \
             && which mpif90  \
 	    && cd /usr/local ; tar cjvf mpich.tar.bz2 lib/* include/* bin/* share/* ||true \
 	    && cd /opt \
-            && pip install mkl-devel \
-            && for lib in $(find /usr/local/lib -name "libmkl*.so.2"); do ln -s $lib ${lib%.2}; done \
-            && ls /usr/local/lib/libmkl* \
 	    && echo 'cloning nwchem source' \
             && cd /opt;  rm -rf nwchem || true;git clone --depth 1  --branch openblas-openmp https://github.com/dmejiar/nwchem.git  \
             && cd nwchem/src \
@@ -85,12 +82,6 @@ RUN         apt-get update \
             && rm -rf tce tools nwdft NWints geom symmetry util nwxc ddscf lapack blas rism argos peigs rmdft gradients symmetry property smd lucia dplot property hessian ccsd mp2_grad moints cafe analyz dimqm /opt/nwchem/lib libext/scalapack libext/openblas  develop ../QA  ../contrib ../examples ../.git ../travis ../web nwpw/nwpwlib/nwpwxc rdmft ../doc libext/libxc/libxc* libext/mpich  /tmp/libext /tmp/local || true \
 	    && echo "int mkl_serv_intel_cpu_true() {return 1;}" > fakeintel.c \
 	    && gcc -shared -fPIC -o /usr/local/lib/libfakeintel.so fakeintel.c \
-	    && rm -rf /usr/local/include/mkl* /usr/local/lib/libmkl_pgi* /usr/local/lib/libmkl_scalapack* \
-               /usr/local/lib/libtbb* /usr/local/lib/libmkl_vml* /usr/local/lib/libiomp* \
-               /usr/local/lib/libmkl*_lp64* /usr/local/lib/libmkl_intel_* /usr/local/lib/libmkl_rt* \
-               /usr/local/lib/libmkl*_mc* /usr/local/lib/libmkl_tbb* /usr/local/lib/libmkl_seq* \
-	       /usr/local/lib/libmkl_blacs* /usr/local/bin/libmkl_cdft* /usr/local/bin/libmkl_scalapack* \
-	       /usr/local/bin/libmkl_pgi* 
 
 
 FROM ubuntu
@@ -108,13 +99,15 @@ ENV         FFIELD=amber \
 COPY --from=builder /usr/local/include/ /usr/local/include/
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin /usr/local/bin/
-COPY --from=builder /opt/nwchem/src/libext/libext.tar.bz2 /opt/nwchem/src/libext/
-COPY --from=builder /opt/nwchem/src/libext/simint.tar.bz2 /opt/nwchem/src/libext/
 COPY --from=builder /usr/local/mpich.tar.bz2 /usr/local/
-COPY --from=builder /opt/nwchem/bin/LINUX64/nwchem /opt/nwchem/bin/LINUX64/
-COPY --from=builder /opt/nwchem/src/data/ /opt/nwchem/src/data/
-COPY --from=builder /opt/nwchem/src/basis/libraries/ /opt/nwchem/src/basis/libraries/
-COPY --from=builder /opt/nwchem/src/basis/libraries.bse/ /opt/nwchem/src/basis/libraries.bse/
+COPY --from=builder /opt/nwchem/ /opt/nwchem/
+COPY --from=builder /lib/x86_64-linux-gnu/libmkl_core.so /usr/local/lib
+COPY --from=builder /lib/x86_64-linux-gnu/libmkl_avx*.so /usr/local/lib
+COPY --from=builder /lib/x86_64-linux-gnu/libmkl_gf_ilp64.so /usr/local/lib
+COPY --from=builder /lib/x86_64-linux-gnu/libmkl_gnu_thread.so /usr/local/lib
+COPY --from=builder /lib/x86_64-linux-gnu/libmkl_def.so /usr/local/lib
+COPY --from=builder /lib/x86_64-linux-gnu/libmkl_mc*.so /usr/local/lib
+
 RUN apt-get update \
     && apt-get -y --no-install-recommends install libgfortran5 libgomp1 libpython3.8 \ 
     && apt-get clean \
