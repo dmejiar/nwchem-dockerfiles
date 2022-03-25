@@ -82,6 +82,9 @@ RUN         apt-get update \
             && rm -rf tce tools nwdft NWints geom symmetry util nwxc ddscf lapack blas rism argos peigs rmdft gradients symmetry property smd lucia dplot property hessian ccsd mp2_grad moints cafe analyz dimqm /opt/nwchem/lib libext/scalapack libext/openblas  develop ../QA  ../contrib ../examples ../.git ../travis ../web nwpw/nwpwlib/nwpwxc rdmft ../doc libext/libxc/libxc* libext/mpich  /tmp/libext /tmp/local || true \
 	    && echo "int mkl_serv_intel_cpu_true() {return 1;}" > fakeintel.c \
 	    && gcc -shared -fPIC -o /usr/local/lib/libfakeintel.so fakeintel.c \
+	    && wget https://github.com/NixOS/patchelf/releases/download/0.14.5/patchelf-0.14.5-x86_64.tar.gz \
+	    && tar xzf patchelf-0.14.5-x86_64.tar.gz \
+	    && bin/patchelf --add-needed libfakeintel.so /opt/nwchem/bin/LINUX64/nwchem
 
 
 FROM ubuntu
@@ -95,7 +98,6 @@ ENV         FFIELD=amber \
             CHARMM_S=${NWCHEM_TOP}/src/data/charmm_s/ \
             CHARMM_X=${NWCHEM_TOP}/src/data/charmm_x/ \
             PATH=$PATH:${NWCHEM_TOP}/bin/LINUX64 \
-            LD_PRELOAD=/usr/local/lib/libfakeintel.so
 COPY --from=builder /usr/local/include/ /usr/local/include/
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin /usr/local/bin/
